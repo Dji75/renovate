@@ -482,41 +482,47 @@ export async function processBranch(
     logger.debug(`Using reuseExistingBranch: ${config.reuseExistingBranch!}`);
     if (!(config.reuseExistingBranch && config.skipBranchUpdate)) {
       await scm.checkoutBranch(config.baseBranch);
-      const res = await getUpdatedPackageFiles(config);
-      // istanbul ignore if
-      if (res.artifactErrors && config.artifactErrors) {
-        res.artifactErrors = config.artifactErrors.concat(res.artifactErrors);
-      }
-      config = { ...config, ...res };
-      if (config.updatedPackageFiles?.length) {
-        logger.debug(
-          `Updated ${config.updatedPackageFiles.length} package files`,
-        );
+
+      if (config.skipArtifactUpdating) {
+        logger.debug(`Artifacts update was skipped`);
       } else {
-        logger.debug('No package files need updating');
-      }
-      const additionalFiles = await getAdditionalFiles(
-        config,
-        branchConfig.packageFiles!,
-      );
-      config.artifactErrors = (config.artifactErrors ?? []).concat(
-        additionalFiles.artifactErrors,
-      );
-      config.updatedArtifacts = (config.updatedArtifacts ?? []).concat(
-        additionalFiles.updatedArtifacts,
-      );
-      if (config.updatedArtifacts?.length) {
-        logger.debug(
-          {
-            updatedArtifacts: config.updatedArtifacts.map((f) =>
-              f.type === 'deletion' ? `${f.path} (delete)` : f.path,
-            ),
-          },
-          `Updated ${config.updatedArtifacts.length} lock files`,
+        const res = await getUpdatedPackageFiles(config);
+        // istanbul ignore if
+        if (res.artifactErrors && config.artifactErrors) {
+          res.artifactErrors = config.artifactErrors.concat(res.artifactErrors);
+        }
+        config = { ...config, ...res };
+        if (config.updatedPackageFiles?.length) {
+          logger.debug(
+            `Updated ${config.updatedPackageFiles.length} package files`,
+          );
+        } else {
+          logger.debug('No package files need updating');
+        }
+        const additionalFiles = await getAdditionalFiles(
+          config,
+          branchConfig.packageFiles!,
         );
-      } else {
-        logger.debug('No updated lock files in branch');
+        config.artifactErrors = (config.artifactErrors ?? []).concat(
+          additionalFiles.artifactErrors,
+        );
+        config.updatedArtifacts = (config.updatedArtifacts ?? []).concat(
+          additionalFiles.updatedArtifacts,
+        );
+        if (config.updatedArtifacts?.length) {
+          logger.debug(
+            {
+              updatedArtifacts: config.updatedArtifacts.map((f) =>
+                f.type === 'deletion' ? `${f.path} (delete)` : f.path,
+              ),
+            },
+            `Updated ${config.updatedArtifacts.length} lock files`,
+          );
+        } else {
+          logger.debug('No updated lock files in branch');
+        }
       }
+
       if (config.fetchChangeLogs === 'branch') {
         await embedChangelogs(config.upgrades);
       }

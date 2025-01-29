@@ -2464,5 +2464,21 @@ describe('workers/repository/update/branch/index', () => {
         ],
       );
     });
+
+    it('update artifacts if skipArtifactUpdating is false', async () => {
+      config.skipArtifactUpdating = false;
+      config.baseBranch = 'main';
+      await branchWorker.processBranch(config);
+      expect(scm.checkoutBranch).toHaveBeenLastCalledWith('main');
+      expect(getUpdated.getUpdatedPackageFiles).toHaveBeenCalled();
+    });
+
+    it('skip artifacts updating if skipArtifactUpdating is true', async () => {
+      config.skipArtifactUpdating = true;
+      config.baseBranch = 'main';
+      await branchWorker.processBranch(config);
+      expect(scm.checkoutBranch).toHaveBeenLastCalledWith('main');
+      expect(getUpdated.getUpdatedPackageFiles).not.toHaveBeenCalled();
+    });
   });
 });
